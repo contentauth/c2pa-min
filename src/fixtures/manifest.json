@@ -1,0 +1,20 @@
+{
+    "claim_generator_info": [
+        {
+            "name": "C2pa Min Test",
+            "version": "0.1"
+        }
+    ],
+    "assertions": [
+        { 
+            "label": "c2pa.actions",
+            "data": {
+                "actions": [
+                    {
+                        "action": "c2pa.opened"
+                    }
+                ]
+            }
+        }
+    ]
+}

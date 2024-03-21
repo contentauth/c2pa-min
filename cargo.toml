@@ -1,0 +1,21 @@
+[package]
+name = "c2pa_min"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+c2pa = { git = "https://github.com/contentauth/c2pa-rs.git", branch = "gpeacock/sign_refactoring", features=["no_cose_verify"] }
+ed25519-dalek = "1.0.1"
+pem = "3.0.2"
+
+
+[profile.release]
+opt-level = "z"     # Optimize for size.
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Reduce number of codegen units to increase optimizations.
+panic = "abort"     # Abort on panic
+strip = true        # Automatically strip symbols from the binary.
+
+[[bin]]
+name = "signer"
