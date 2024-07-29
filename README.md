@@ -2,9 +2,10 @@
 
 `c2pa_min` shows how to create a minimum sized app for signing only 
 We sign with Ed25519 and associated certs without openssl
-This does not currently have the ability to validate.
+The signing here is in a separate signer app, to show how to keep the private keys private.
+This does not have the ability to validate.
 
-To build and run use:
+To build and first build the signer binary and then run the release:
 
 `cargo build --release --bin signer`
 
