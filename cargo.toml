@@ -2,13 +2,13 @@
 name = "c2pa_min"
 version = "0.1.0"
 edition = "2021"
+default-run = "c2pa_min"
 
 [dependencies]
 anyhow = "1.0"
-c2pa = { git = "https://github.com/contentauth/c2pa-rs.git", branch = "gpeacock/sign_refactoring", features=["no_cose_verify"] }
-ed25519-dalek = "1.0.1"
-pem = "3.0.2"
-
+c2pa = {version = "0.33", features = ["unstable_api"]}
+ed25519-dalek = "1.0"
+pem = "3.0"
 
 [profile.release]
 opt-level = "z"     # Optimize for size.
