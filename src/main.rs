@@ -17,49 +17,53 @@ use std::{
 };
 
 use anyhow::Result;
-use c2pa::{Manifest, SigningAlg};
-
-mod callback_signer;
-use callback_signer::create_callback_signer;
+use c2pa::{settings::load_settings_from_str, Builder, CallbackSigner, SigningAlg};
 
 const CERTS: &[u8] = include_bytes!("fixtures/ed25519.pub");
 const TSA_URL: &str = "https://freetsa.org/tsr";
-const IMAGE: &[u8] = include_bytes!("fixtures/A.jpg");
+const SETTINGS: &str = r#"{ "verify": { "verify_after_sign": "false" } }"#;
 const MANIFEST: &str = include_str!("fixtures/manifest.json");
+const IMAGE: &[u8] = include_bytes!("fixtures/A.jpg");
+const FORMAT: &str = "image/jpeg";
+const OUTPUT: &str = "target/output.jpg";
 
-fn main() -> Result<()>
-{
+fn main() -> Result<()> {
+    // We need to clear this to avoid calling a dummy verify function. (will fix this later)
+    load_settings_from_str(SETTINGS, "json")?;
+
     //let _ed_signer = |data: &[u8]| ed_sign(data, PRIVATE_KEY);
-    let signer = create_callback_signer(SigningAlg::Ed25519, CERTS, sign_external, Some(TSA_URL.to_string()))?;
+    let signer =
+        CallbackSigner::new(sign_external, SigningAlg::Ed25519, CERTS).set_tsa_url(TSA_URL);
 
     // convert image buffer to cursor with Read/Write/Seek capability
-    let mut stream = std::io::Cursor::new(IMAGE.to_vec());
+    let mut source = std::io::Cursor::new(IMAGE.to_vec());
 
-    let mut manifest = Manifest::from_json(MANIFEST)?; // new("my_app".to_owned());
+    let mut builder = Builder::from_json(MANIFEST)?;
 
     // Embed a manifest using the signer.
-    let mut output = Cursor::new(Vec::new());
-    let _bytes = manifest
-        .embed_to_stream("jpeg", &mut stream, &mut output, signer.as_ref())?;
+    let mut dest = Cursor::new(Vec::new());
+    let _manifest_bytes = builder.sign(&signer, FORMAT, &mut source, &mut dest)?;
 
     // The image is now signed and has a manifest embedded in it.
+    // _manifest_bytes contains the manifest bytes if you need them.
 
-    // Write the output to a file to see the result.
-    output.set_position(0);
-    std::fs::write("target/output.jpg", output.get_ref())?;
+    // In this example we now write the output to a file to see the result.
+    dest.set_position(0); // reset the cursor to the beginning
+    std::fs::write(OUTPUT, dest.get_ref())?;
+    println!("Output written to {OUTPUT}");
 
-    // Read a manifest store from the output image to prove it worked
-    //println!("Manifest store: {}", c2pa::ManifestStore::from_stream("jpeg", &mut output, true).unwrap());
+    // We can display the resulting manifest for debugging, but it is not validated in this build.
+    // It is better to use c2patool to verify the output file.
+    // dest.set_position(0);
+    // println!("Manifest store: {}", c2pa::Reader::from_stream(FORMAT, &mut dest)?);
     Ok(())
 }
 
-
 /// Sign the given data using an external process.
 /// This could be a remote service call or a local process.
-fn sign_external(data: &[u8]) -> c2pa::Result<Vec<u8>> {
-
-    command_call("target/release/signer", data)
-        .map_err(|e| c2pa::Error::OtherError(e.into()))
+/// We do not need to use the `context` parameter in this example.
+fn sign_external(_context: *const (), data: &[u8]) -> c2pa::Result<Vec<u8>> {
+    command_call("target/release/signer", data).map_err(|e| c2pa::Error::OtherError(e.into()))
 }
 
 /// Call an external executable with the given `stdin` and return the `stdout` as a Result<Vec<u8>>.
@@ -71,13 +75,8 @@ fn command_call(name: &str, stdin: &[u8]) -> Result<Vec<u8>> {
         .spawn()?;
 
     // Write claim bytes to spawned processes' `stdin`.
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(stdin)?;
-    let output = child
-        .wait_with_output()?;
+    child.stdin.take().unwrap().write_all(stdin)?;
+    let output = child.wait_with_output()?;
 
     if !output.status.success() {
         let err_msg = String::from_utf8(output.stderr).unwrap_or_default();
