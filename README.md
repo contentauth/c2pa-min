@@ -1,7 +1,8 @@
 # c2pa_min - example to create a small c2pa Rust application
 
-`c2pa_min` shows how to create a minimum sized app for signing only 
-We sign with Ed25519 and associated certs without openssl
+`c2pa_min` shows how to create a minimum sized app for signing only.
+
+We sign with Ed25519 and associated certs without openssl.
 The signing here is in a separate signer app, to show how to keep the private keys private.
 This does not have the ability to validate.
 
