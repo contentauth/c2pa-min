@@ -10,6 +10,12 @@ It signs assets using the Ed25519 digital signature scheme, but does not have th
 
 NOTE: The example was built and tested on macOS, and these instructions assume you are using macOS. 
 
+## Overview
+
+The app uses the [new C2PA Rust library API](https://opensource.contentauthenticity.org/docs/rust-sdk/#new-api) which has `Builder` and `Reader` data structures. All the code for the main program is in [`src/main.rs`](https://github.com/contentauth/c2pa-min/blob/main/src/main.rs), which calls out to the standalone singer app defined in [`src/bin/signer.rs`](https://github.com/contentauth/c2pa-min/blob/main/src/bin/signer.rs). 
+
+The main program `sign_external` function calls the signer app. The signer app reads bytes from `stdin`, signs them using a private key, then  writes the signed bytes to `stdout`. The signer app uses a test/development private key and certificate in the `src/fixtures` directory.
+
 ## Building the application
 
 **Prerequisites**: Install [Rust](https://www.rust-lang.org/tools/install).
@@ -46,6 +52,9 @@ Output written to target/output.jpg
 ```
 
 You can confirm that Content Credentials were added to `target/output.jpg` by using C2PA Tool (with `c2patool target/output.jpg`) or by uploading the image to [Verify](https://contentcredentials.org/verify).
+
+
+
 
 
 
