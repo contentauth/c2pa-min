@@ -1,4 +1,4 @@
-# C2PA Rust example application
+# Minimal C2PA Rust example application
 
 [This repository](https://github.com/contentauth/c2pa-min) is an example of a minimal application using the 
 [C2PA Rust library](https://opensource.contentauthenticity.org/docs/rust-sdk/) that illustrates how to use an external 
