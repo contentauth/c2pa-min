@@ -6,7 +6,7 @@ signing application and does not require OpenSSL.
 
 The application uses a separate signer app to show how to keep the private keys secure.
 It signs assets using the Ed25519 digital signature scheme, but does not have the ability to 
-[validate](https://opensource.contentauthenticity.org/docs/manifest/manifest-validation) manifests.
+[validate](https://opensource.contentauthenticity.org/docs/manifest/manifest-validation) manifests, since validation currently requires using OpenSSL.
 
 NOTE: The example was built and tested on macOS, and these instructions assume you are using macOS. 
 
