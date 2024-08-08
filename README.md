@@ -1,9 +1,12 @@
 # C2PA Rust example application
 
-[This repository](https://github.com/contentauth/c2pa-min) is an example of a minimal application using the [C2PA Rust library](https://opensource.contentauthenticity.org/docs/rust-sdk/) that illustrates how to use an external signing application and does not require OpenSSL.
+[This repository](https://github.com/contentauth/c2pa-min) is an example of a minimal application using the 
+[C2PA Rust library](https://opensource.contentauthenticity.org/docs/rust-sdk/) that illustrates how to use an external 
+signing application and does not require OpenSSL.
 
-The application uses a separate signer app, to show how to keep the private keys secure.
-The application does not have the ability to validate.
+The application uses a separate signer app to show how to keep the private keys secure.
+It signs assets using the Ed25519 digital signature scheme, but does not have the ability to 
+[validate](https://opensource.contentauthenticity.org/docs/manifest/manifest-validation) manifests.
 
 NOTE: The example was built and tested on macOS, and these instructions assume you are using macOS. 
 
