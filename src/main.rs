@@ -20,7 +20,6 @@ use anyhow::Result;
 use c2pa::{settings::load_settings_from_str, Builder, CallbackSigner, SigningAlg};
 
 const CERTS: &[u8] = include_bytes!("fixtures/ed25519.pub");
-const TSA_URL: &str = "https://freetsa.org/tsr";
 const SETTINGS: &str = r#"{ "verify": { "verify_after_sign": "false" } }"#;
 const MANIFEST: &str = include_str!("fixtures/manifest.json");
 const IMAGE: &[u8] = include_bytes!("fixtures/A.jpg");
@@ -32,8 +31,7 @@ fn main() -> Result<()> {
     load_settings_from_str(SETTINGS, "json")?;
 
     //let _ed_signer = |data: &[u8]| ed_sign(data, PRIVATE_KEY);
-    let signer =
-        CallbackSigner::new(sign_external, SigningAlg::Ed25519, CERTS).set_tsa_url(TSA_URL);
+    let signer = CallbackSigner::new(sign_external, SigningAlg::Ed25519, CERTS);
 
     // convert image buffer to cursor with Read/Write/Seek capability
     let mut source = std::io::Cursor::new(IMAGE.to_vec());

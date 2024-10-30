@@ -2,3 +2,7 @@
 
 .DS_Store
 .vscode
+/.idea/.gitignore
+/.idea/c2pa-min.iml
+/.idea/modules.xml
+/.idea/vcs.xml

@@ -17,7 +17,7 @@ use std::{
     io::{Read, Write},
 };
 
-use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signature, Signer};
+use ed25519_dalek::{SecretKey, Signer, SigningKey};
 use pem::parse;
 
 // The private key is only known by the singer
@@ -36,7 +36,7 @@ fn main() -> io::Result<()> {
     let signed = ed_sign(&bytes_to_be_signed, PRIVATE_KEY)?;
 
     // 3. Write the signed bytes to `stdout`.
-    let _ = io::stdout().write_all(&signed)?;
+    io::stdout().write_all(&signed)?;
 
     Ok(())
 }
@@ -46,16 +46,10 @@ fn main() -> io::Result<()> {
 /// We then create a keypair from the secret and public keys, and sign the data.
 /// The signature is returned as a vector of bytes.
 pub fn ed_sign(data: &[u8], private_key: &[u8]) -> io::Result<Vec<u8>> {
-    // Parse the PEM data to get the private key
     let pem = parse(private_key).unwrap();
-    // For Ed25519, the key is 32 bytes long, so we skip the first 16 bytes of the PEM data
-    let key_bytes = &pem.contents()[16..];
-    let secret = SecretKey::from_bytes(key_bytes).unwrap();
-    let public = PublicKey::from(&secret);
-    // Create a keypair from the secret and public keys
-    let keypair = Keypair { secret, public };
-    // Sign the data
-    let signature: Signature = keypair.sign(data);
-
+    let secret: [u8; 32] = pem.contents()[16..].try_into().unwrap();
+    let secret_key = SecretKey::from(secret);
+    let signing_key = SigningKey::from(secret_key);
+    let signature = signing_key.sign(data);
     Ok(signature.to_bytes().to_vec())
 }
