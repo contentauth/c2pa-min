@@ -30,7 +30,7 @@ const PRIVATE_KEY: &[u8] = include_bytes!("../fixtures/ed25519.pem");
 fn main() -> io::Result<()> {
     let mut bytes_to_be_signed: Vec<u8> = vec![];
     // 1. Read the bytes to be signed from this process' `stdin`.
-    io::stdin().read_to_end(&mut bytes_to_be_signed).unwrap();
+    io::stdin().read_to_end(&mut bytes_to_be_signed)?;
 
     // 2. Sign the bytes using your private key.
     let signed = ed_sign(&bytes_to_be_signed, PRIVATE_KEY)?;

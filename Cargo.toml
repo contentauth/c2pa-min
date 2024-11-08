@@ -1,13 +1,14 @@
 [package]
-name = "c2pa_min"
+name = "caipi"
 version = "0.1.0"
 edition = "2021"
-default-run = "c2pa_min"
+default-run = "caipi"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1.0"
-c2pa = {version = "0.37.1", features = ["unstable_api"]}
+c2pa = {version = "0.38.0", features = ["unstable_api"]}
+clap = { version = "4.5.4", features = ["derive", "env"] }
 ed25519-dalek = {  version = "2.0" , features = ["pem"]}
 pem = "3.0.4"
 
