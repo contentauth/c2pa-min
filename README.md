@@ -56,6 +56,16 @@ You can confirm that Content Credentials were added to `target/output.jpg` by us
 
 
 
+# Stuff for caipi build
+
+Cross compiling for pi
+```export DOCKER_DEFAULT_PLATFORM=linux/x86_64/v8```
+
+```cross build --release --target arm-unknown-linux-musleabi```
+
+Copying the app to the pi.
+```scp target/arm-unknown-linux-musleabi/release/caipi gpeacock@caicam2.local:/home/gpeacock/caipi```
 
 
-
+Copying images from the pi
+```scp gpeacock@caicam2.local:/home/gpeacock/c2pa-min-1/rpi1.jpg .```

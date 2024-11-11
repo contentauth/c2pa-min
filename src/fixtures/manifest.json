@@ -1,7 +1,7 @@
 {
     "claim_generator_info": [
         {
-            "name": "C2pa Min Test",
+            "name": "caipi",
             "version": "0.1"
         }
     ],
@@ -11,10 +11,31 @@
             "data": {
                 "actions": [
                     {
-                        "action": "c2pa.opened"
+                        "action": "c2pa.created"
                     }
                 ]
             }
-        }
+        },
+        {
+            "label": "stds.exif",
+            "data": {
+              "@context": {
+                "dc": "http://purl.org/dc/elements/1.1/",
+                "exif": "http://ns.adobe.com/exif/1.0/",
+                "exifEX": "http://cipa.jp/exif/2.32/",
+                "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                "tiff": "http://ns.adobe.com/tiff/1.0/",
+                "xmp": "http://ns.adobe.com/xap/1.0/"
+              },
+              "dc:creator": "",
+              "tiff:Make": "Rasberry Pi",
+              "exifEX:PhotographicSensitivity": 6400,
+              "dc:rights": "",
+              "exif:ExposureTime": "1/10",
+              "exif:FNumber": "4.5",
+              "tiff:Model": "Pi Camera v2.1"
+            },
+            "kind": "Json"
+          }
     ]
 }

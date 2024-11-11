@@ -11,15 +11,11 @@
 // specific language governing permissions and limitations under
 // each license.
 
-use std::{
-    //io::Write,
-    path::PathBuf,
-    //process::{Command, Stdio},
-};
+use std::{path::PathBuf, process::Command};
 
 use anyhow::Result;
 use c2pa::{settings::load_settings_from_str, Builder, CallbackSigner, SigningAlg};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use ed25519_dalek::{SecretKey, Signer, SigningKey};
 use pem::parse;
 
@@ -32,77 +28,162 @@ const SETTINGS: &str = r#"{ "verify": { "verify_after_sign": "false" } }"#;
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Path to the image file
-    #[clap()]
-    image: PathBuf,
+    #[clap(subcommand)]
+    command: Commands,
+}
 
-    /// Path to the manifest file (optional)
-    #[clap(short, long, env = "MANIFEST")]
-    manifest: Option<PathBuf>,
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Sign an image
+    Sign {
+        /// Path to the image file
+        #[clap()]
+        image: PathBuf,
 
-    /// Path to the output file (optional)
-    #[clap(short, long)]
-    output: Option<PathBuf>,
+        /// Path to the manifest file (optional)
+        #[clap(short, long, env = "MANIFEST")]
+        manifest: Option<PathBuf>,
+
+        /// Path to the output file (optional)
+        #[clap(short, long)]
+        output: Option<PathBuf>,
+    },
+    /// Capture an image
+    Capture {
+        /// Path to the output file
+        #[clap(short, long)]
+        output: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
     // We need to clear this to avoid calling a dummy verify function. (will fix this later)
     load_settings_from_str(SETTINGS, "json")?;
+    let signer = CallbackSigner::new(ed_signer, SigningAlg::Ed25519, CERTS);
+    //    .set_tsa_url("http://timestamp.digicert.com"); // todo: Figure out why this causes an error
+
     let args = Args::parse();
 
-    let image_path = args.image;
-    let manifest_path = args
-        .manifest
-        .unwrap_or_else(|| "fixtures/manifest.json".into());
-    let output_path = args.output.unwrap_or_else(|| "output.jpg".into());
+    let manifest_def = r#"{
+        "claim_generator_info": [
+            {
+                "name": "CAI Pi Camera",
+                "version": "0.1"
+            }
+        ],
+        "assertions": [
+            { 
+                "label": "c2pa.actions",
+                "data": {
+                    "actions": [
+                        {
+                            "action": "c2pa.created"
+                        }
+                    ]
+                }
+            },
+            {
+                "label": "stds.exif",
+                "data": {
+                    "@context": {
+                        "dc": "http://purl.org/dc/elements/1.1/",
+                        "exif": "http://ns.adobe.com/exif/1.0/",
+                        "exifEX": "http://cipa.jp/exif/2.32/",
+                        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                        "tiff": "http://ns.adobe.com/tiff/1.0/",
+                        "xmp": "http://ns.adobe.com/xap/1.0/"
+                    },
+                    "dc:creator": "",
+                    "tiff:Make": "Raspberry Pi",
+                    "exifEX:PhotographicSensitivity": 6400,
+                    "exif:ExposureTime": "1/10",
+                    "exif:FNumber": "4.5",
+                    "tiff:Model": "Pi Camera v2.1"
+                },
+                "kind": "Json"
+            }
+        ]
+    }"#;
 
-    let manifest_json = std::fs::read_to_string(manifest_path)?;
+    match args.command {
+        Commands::Sign {
+            image,
+            manifest,
+            output,
+        } => {
+            let image_path = image;
+            let output_path = output.unwrap_or_else(|| "output.jpg".into());
 
-    let mut source = std::fs::OpenOptions::new().read(true).open(&image_path)?;
-    let mut dest = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(&output_path)?;
+            let manifest_json = match manifest.as_ref() {
+                Some(manifest_path) => std::fs::read_to_string(manifest_path)?,
+                None => manifest_def.to_string(),
+            };
 
-    let format = image_path.extension().unwrap().to_str().unwrap();
+            let mut source = std::fs::OpenOptions::new().read(true).open(&image_path)?;
+            let mut dest = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(&output_path)?;
 
-    let signer = CallbackSigner::new(ed_signer, SigningAlg::Ed25519, CERTS);
+            let title = output_path.file_stem().unwrap().to_str().unwrap();
+            let format = output_path.extension().unwrap().to_str().unwrap();
 
-    let mut builder = Builder::from_json(&manifest_json)?;
+            let mut builder = Builder::from_json(&manifest_json)?;
+            builder.definition.title = Some(title.to_string());
 
-    // Embed a manifest using the signer.
-    let _manifest_bytes = builder.sign(&signer, format, &mut source, &mut dest)?;
+            // Embed a manifest using the signer.
+            let _manifest_bytes = builder.sign(&signer, format, &mut source, &mut dest)?;
 
-    println!("Output written to {:?}", &output_path.display());
+            println!("Output written to {:?}", &output_path.display());
+        }
+        Commands::Capture { output } => {
+            let output_path = output;
+
+            // Invoke the command line tool
+            let output = Command::new("rpicam-jpeg")
+                .arg("-o")
+                .arg("temp.jpg")
+                .arg("-t")
+                .arg("1")
+                .arg("-n")
+                .output()
+                .expect("Failed to execute command");
+
+            if !output.status.success() {
+                let err_msg = format!(
+                    "Command failed with error: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                return Err(anyhow::anyhow!(err_msg));
+            }
+
+            println!(
+                "Command executed successfully: {}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+
+            let image_path = "temp.jpg";
+
+            let mut source = std::fs::OpenOptions::new().read(true).open(&image_path)?;
+            let mut dest = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(&output_path)?;
+
+            let title = output_path.file_stem().unwrap().to_str().unwrap();
+            let format = output_path.extension().unwrap().to_str().unwrap();
+
+            let mut builder = Builder::from_json(manifest_def)?;
+            builder.definition.title = Some(title.to_string());
+
+            // Embed a manifest using the signer.
+            let _manifest_bytes = builder.sign(&signer, format, &mut source, &mut dest)?;
+
+            println!("Captured Jpeg image {:?}", &output_path.display());
+        }
+    }
     Ok(())
 }
-
-/// Sign the given data using an external process.
-/// This could be a remote service call or a local process.
-/// We do not need to use the `context` parameter in this example.
-// fn sign_external(_context: *const (), data: &[u8]) -> c2pa::Result<Vec<u8>> {
-//     command_call("target/release/signer", data).map_err(|e| c2pa::Error::OtherError(e.into()))
-// }
-
-// /// Call an external executable with the given `stdin` and return the `stdout` as a Result<Vec<u8>>.
-// fn command_call(name: &str, stdin: &[u8]) -> Result<Vec<u8>> {
-//     let mut child = Command::new(name)
-//         .stdin(Stdio::piped())
-//         .stdout(Stdio::piped())
-//         .stderr(Stdio::piped())
-//         .spawn()?;
-
-//     // Write claim bytes to spawned processes' `stdin`.
-//     child.stdin.take().unwrap().write_all(stdin)?;
-//     let output = child.wait_with_output()?;
-
-//     if !output.status.success() {
-//         let err_msg = String::from_utf8(output.stderr).unwrap_or_default();
-//         Err(anyhow::anyhow!("{} failed: {}", name, err_msg))
-//     } else {
-//         Ok(output.stdout)
-//     }
-// }
 
 fn ed_signer(_context: *const (), data: &[u8]) -> c2pa::Result<Vec<u8>> {
     Ok(ed_sign(data, PRIVATE_KEY).map_err(|e| c2pa::Error::OtherError(e.into()))?)
