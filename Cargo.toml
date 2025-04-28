@@ -1,13 +1,13 @@
 [package]
 name = "c2pa_min"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 default-run = "c2pa_min"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1.0"
-c2pa = {version = "0.37.1", features = ["unstable_api"]}
+c2pa = { version = "0.49.3", features = ["rust_native_crypto"]}
 ed25519-dalek = {  version = "2.0" , features = ["pem"]}
 pem = "3.0.4"
 
