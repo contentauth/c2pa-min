@@ -67,7 +67,7 @@ fn sign_external(_context: *const (), data: &[u8]) -> c2pa::Result<Vec<u8>> {
     command_call("target/release/signer", data).map_err(|e| c2pa::Error::OtherError(e.into()))
 }
 
-/// Call an external executable with the given `stdin` and return the `stdout` as a Result<Vec<u8>>.
+/// Call an external executable with the given `stdin` and return the `stdout` as a `Result<Vec<u8>>`.
 fn command_call(name: &str, stdin: &[u8]) -> Result<Vec<u8>> {
     let mut child = Command::new(name)
         .stdin(Stdio::piped())
