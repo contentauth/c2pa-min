@@ -11,7 +11,10 @@
 // specific language governing permissions and limitations under
 // each license.
 
-/// A simple program demonstrating how to write an example CLI tool that signs C2PA manifests.
+/// A simple program demonstrating how to write an example CLI signer that
+/// can be invoked by the c2pa crate to sign data. This is a simple example and does not
+/// implement any security measures.
+///
 use std::{
     io,
     io::{Read, Write},

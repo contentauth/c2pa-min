@@ -11,32 +11,33 @@
 // specific language governing permissions and limitations under
 // each license.
 
+/// An minimal example of how to use the c2pa crate to sign a manifest and embed it in an image.
+/// It also verifies the manifest store after signing.
 use std::{
     io::{Cursor, Write},
     process::{Command, Stdio},
 };
 
 use anyhow::Result;
-use c2pa::{settings::load_settings_from_str, Builder, CallbackSigner, SigningAlg};
+use c2pa::{Builder, CallbackSigner, Context, Settings, SigningAlg};
 
 const CERTS: &[u8] = include_bytes!("fixtures/ed25519.pub");
-const SETTINGS: &str = r#"{ "verify": { "verify_after_sign": "false" } }"#;
+const SETTINGS: &str = include_str!("fixtures/settings.json");
 const MANIFEST: &str = include_str!("fixtures/manifest.json");
 const IMAGE: &[u8] = include_bytes!("fixtures/A.jpg");
 const FORMAT: &str = "image/jpeg";
 const OUTPUT: &str = "target/output.jpg";
 
 fn main() -> Result<()> {
-    // We need to clear this to avoid calling a dummy verify function. (will fix this later)
-    load_settings_from_str(SETTINGS, "json")?;
+    let settings = Settings::new().with_json(SETTINGS)?;
+    let context = Context::new().with_settings(settings)?.into_shared();
 
-    //let _ed_signer = |data: &[u8]| ed_sign(data, PRIVATE_KEY);
     let signer = CallbackSigner::new(sign_external, SigningAlg::Ed25519, CERTS);
 
     // convert image buffer to cursor with Read/Write/Seek capability
     let mut source = std::io::Cursor::new(IMAGE.to_vec());
 
-    let mut builder = Builder::from_json(MANIFEST)?;
+    let mut builder = Builder::from_shared_context(&context).with_definition(MANIFEST)?;
 
     // Embed a manifest using the signer.
     let mut dest = Cursor::new(Vec::new());
@@ -50,10 +51,12 @@ fn main() -> Result<()> {
     std::fs::write(OUTPUT, dest.get_ref())?;
     println!("Output written to {OUTPUT}");
 
-    // We can display the resulting manifest for debugging, but it is not validated in this build.
-    // It is better to use c2patool to verify the output file.
-    // dest.set_position(0);
-    // println!("Manifest store: {}", c2pa::Reader::from_stream(FORMAT, &mut dest)?);
+    // This shows how to verify and display the manifest store from the signed image.
+    dest.set_position(0);
+    println!(
+        "Manifest store: {}",
+        c2pa::Reader::from_shared_context(&context).with_stream(FORMAT, &mut dest)?
+    );
     Ok(())
 }
 

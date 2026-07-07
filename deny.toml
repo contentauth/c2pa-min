@@ -16,8 +16,10 @@ targets = [
 yanked = "deny"
 
 ignore = [
-    "RUSTSEC-2021-0127", # serde_cbor
     "RUSTSEC-2023-0071", # rsa Marvin Attack: (https://jira.corp.adobe.com/browse/CAI-5104)
+    "RUSTSEC-2024-0370", # proc-macro-error
+    "RUSTSEC-2026-0194", # quick-xml: quadratic run time checking duplicate attrs, unresolved upstream in c2pa-rs
+    "RUSTSEC-2026-0195", # quick-xml: unbounded namespace-declaration allocation, unresolved upstream in c2pa-rs
 ]
 
 [bans]
@@ -28,13 +30,12 @@ allow = [
     "Apache-2.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
-    "CC0-1.0",
     "ISC",
-    "LicenseRef-ring",
     "MIT",
     "MPL-2.0",
-    "Unicode-DFS-2016",
+    "Unicode-3.0",
     "Zlib",
+    "CDLA-Permissive-2.0",
 ]
 confidence-threshold = 0.9
 
